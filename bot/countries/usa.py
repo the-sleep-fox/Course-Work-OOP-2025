@@ -1,5 +1,3 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
-main = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text="USA 🇺🇸")]
-])
+usa_row = [KeyboardButton(text="USA")]

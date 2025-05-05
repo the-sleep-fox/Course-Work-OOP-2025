@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from aiogram import Bot, Dispatcher
-
-from handlers.user import user
+import logging
+from bot.handlers.user import user
 
 import sys
 from pathlib import Path
@@ -22,6 +22,7 @@ async def main():
 
 
 if __name__  == '__main__':
+    logging.basicConfig(level=logging.INFO)
     print('Bot started!')
     try:
         asyncio.run(main())

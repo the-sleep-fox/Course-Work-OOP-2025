@@ -1,12 +1,25 @@
 from aiogram import Router
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
-from bot.countries import poland, usa
+import bot.countries.poland as pl
+import bot.countries.usa as us
 
 user = Router()
 
 @user.message(CommandStart())
 async def start(message: Message):
-    await message.answer("Hello! I'm bot for booking visa-appointment time-slot")
-    await message.answer("Please, choose on of countries, that visa you would like to become:", pol_markup=poland.main, usa_markup=usa.main)
+    combined_markup = ReplyKeyboardMarkup(
+        keyboard=[
+            pl.poland_row,  # Row from Poland
+            us.usa_row,     # Row from USA
+            [KeyboardButton(text="Back")]  # Additional row
+        ],
+        resize_keyboard=True,
+        input_field_placeholder="Choose country"
+    )
+    await message.answer(
+        "Please choose a country:",
+        reply_markup=combined_markup
+    )
