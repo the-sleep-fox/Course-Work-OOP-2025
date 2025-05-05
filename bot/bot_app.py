@@ -8,6 +8,12 @@ from aiogram import Bot, Dispatcher
 
 from handlers.user import user
 
+import sys
+from pathlib import Path
+
+
+sys.path.append(str(Path(__file__).parent.parent))
+
 async def main():
     bot = Bot(token=os.getenv('TOKEN'))
     dp = Dispatcher()
