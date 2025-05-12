@@ -31,7 +31,6 @@ async def start(message: Message):
 @user.message(F.text.in_(["USA", "Poland"]))
 async def handle_country_choice(message: Message, state: FSMContext):
     await message.answer(f"You choose country: {message.text}")
-    await asyncio.sleep(5)
     await state.set_state(AuthState.entering_email)
     await message.answer("Введите ваш email:")
 
@@ -56,6 +55,7 @@ async def get_password(message: Message, state: FSMContext):
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post("http://localhost:8000/api/login", json={"email": email, "password": password})
+                print(response)
                 if response.status_code == 200:
                     await message.answer("Успешный вход! ✅", reply_markup=ReplyKeyboardRemove())
                     # Здесь — переход к следующему этапу, например, выбор даты
