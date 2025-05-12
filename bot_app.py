@@ -8,14 +8,9 @@ from aiogram import Bot, Dispatcher
 import logging
 from bot.handlers.user import user
 
-import sys
-from pathlib import Path
-
-
-sys.path.append(str(Path(__file__).parent.parent))
-
 async def main():
     bot = Bot(token=os.getenv('TOKEN'))
+    await bot.delete_webhook(drop_pending_updates=True) #ignore previous messages
     dp = Dispatcher()
     dp.include_router(user)
     await dp.start_polling(bot)
