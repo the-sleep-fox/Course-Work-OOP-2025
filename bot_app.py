@@ -10,6 +10,7 @@ from bot.handlers.user import user
 
 async def main():
     bot = Bot(token=os.getenv('TOKEN'))
+    await bot.delete_webhook(drop_pending_updates=True) #ignore previous messages
     dp = Dispatcher()
     dp.include_router(user)
     await dp.start_polling(bot)
