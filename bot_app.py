@@ -1,7 +1,7 @@
 import asyncio
 import os
 from dotenv import load_dotenv
-
+from aiogram.fsm.storage.memory import MemoryStorage
 load_dotenv()
 
 from aiogram import Bot, Dispatcher
@@ -11,7 +11,7 @@ from bot.handlers.user import user
 async def main():
     bot = Bot(token=os.getenv('TOKEN'))
     await bot.delete_webhook(drop_pending_updates=True) #ignore previous messages
-    dp = Dispatcher()
+    dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(user)
     await dp.start_polling(bot)
 
