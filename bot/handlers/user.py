@@ -10,6 +10,7 @@ from aiogram.types import ReplyKeyboardRemove
 from bot.states import AuthState
 import httpx
 
+
 EMAIL_REGEX = re.compile(
     r"^[a-zA-Z0-9_.+-]+@(?:yandex|gmail|outlook|icloud)\.(?:com|ru|by)$"
 )
