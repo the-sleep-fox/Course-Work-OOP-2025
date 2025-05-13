@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr
 
 
 class UserLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 class Slot(BaseModel):
