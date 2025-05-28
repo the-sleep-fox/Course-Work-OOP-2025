@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from models import UserLogin
+from base_models import UserLogin
 from database import users
 
 router = APIRouter()

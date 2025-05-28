@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from my_email import send_notification_email
-from models import SlotSelectionRequest
-
+from base_models import SlotSelectionRequest
 router = APIRouter()
 
 available_slots = {
