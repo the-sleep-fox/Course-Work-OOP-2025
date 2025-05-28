@@ -6,3 +6,4 @@
 .env.development
 .env.production
 .idea
+database.py

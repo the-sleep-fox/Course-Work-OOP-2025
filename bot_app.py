@@ -9,7 +9,7 @@ import logging
 from bot.handlers.user import user
 
 async def main():
-    bot = Bot(token=os.getenv('TOKEN'))
+    bot = Bot(os.getenv('TOKEN'))
     await bot.delete_webhook(drop_pending_updates=True) #ignore previous messages
     dp = Dispatcher(storage=MemoryStorage())
     dp.update.outer_middleware(LoggingMiddleware())
