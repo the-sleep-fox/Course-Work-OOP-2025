@@ -1,7 +1,9 @@
 # временная "база"
 users = {
     "petusokalesa@gmail.com": "1234567",
-    "admin@gmail.com": "1111111"
+    "admin@gmail.com": "1111111",
+    "petushokalesia@gmail.com": "1234567"
+
 }
 
 slots = [

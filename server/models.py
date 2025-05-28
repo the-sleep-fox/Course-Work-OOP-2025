@@ -8,3 +8,9 @@ class UserLogin(BaseModel):
 class Slot(BaseModel):
     date: str
     available: bool
+
+class SlotSelectionRequest(BaseModel):
+    date: str
+    time: str
+    email: str
+    country: str
