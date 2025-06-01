@@ -1,16 +1,16 @@
-from sqlmodel import SQLModel, Field, Relationship
-from typing import Optional
-from datetime import datetime
+# booking.py
 
-from server.models.slot import Slot
-from server.models.user import User
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
+from server.database import Base
 
+class Booking(Base):
+    __tablename__ = "bookings"
 
-class Booking(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id")
-    slot_id: int = Field(foreign_key="slot.id")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    id = Column(Integer, primary_key=True)
+    email = Column(String, ForeignKey("users.email"),nullable=False)
+    country = Column(String, nullable=False)
+    date = Column(String, nullable=False)
+    time = Column(String, nullable=False)
 
-    user: Optional[User] = Relationship(back_populates="bookings")
-    slot: Optional[Slot] = Relationship(back_populates="bookings")
+    user = relationship("User", back_populates="bookings")

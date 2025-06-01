@@ -14,3 +14,7 @@ class SlotSelectionRequest(BaseModel):
     time: str
     email: str
     country: str
+
+class CancelRequest(BaseModel):
+    email: str
+    country: str

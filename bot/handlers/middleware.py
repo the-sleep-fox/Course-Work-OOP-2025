@@ -13,5 +13,5 @@ class LoggingMiddleware(BaseMiddleware):
         if not isinstance(event, Message):
             return await handler(event, data)  # пропускаем дальше, если это не Message
 
-        print(f"🪵 Юзер {event.from_user.id} отправил сообщение: {event.text}")
+        print(f"Юзер {event.from_user.id} отправил сообщение: {event.text}")
         return await handler(event, data)

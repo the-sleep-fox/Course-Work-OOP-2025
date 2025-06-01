@@ -3,5 +3,12 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 # from bot.keybords.countries.usa import usa_row
 
 
-main = ReplyKeyboardMarkup(keyboard = [[KeyboardButton(text="Poland")], [KeyboardButton(text="USA")]],
-                           resize_keyboard=True, input_field_placeholder="Choose country")
+main= ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="🌍 Найти слот")],
+        [KeyboardButton(text="📄 Мои записи"), KeyboardButton(text="❌ Отменить запись")],
+        [KeyboardButton(text="🔐 Зарегистрироваться")]
+    ],
+    resize_keyboard=True,
+    one_time_keyboard=False
+)

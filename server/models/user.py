@@ -1,9 +1,10 @@
 from sqlalchemy import Column, String
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import relationship
 from passlib.context import CryptContext
 import re
+from server.database import Base
 
-Base = declarative_base()
+# Base = declarative_base()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -13,6 +14,7 @@ class User(Base):
     passport_id = Column(String(9), primary_key=True, unique=True, index=True)  # Пример: AB1234567
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    bookings = relationship("Booking", back_populates="user", uselist=False)
 
     def set_password(self, password: str):
         self.hashed_password = pwd_context.hash(password)
