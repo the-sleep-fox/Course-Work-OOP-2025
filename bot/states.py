@@ -9,3 +9,10 @@ class AuthState(StatesGroup):
     entering_cancel_country = State()
     canceling_country = State()
     menu = State()
+
+class RegisterStates(StatesGroup):
+    waiting_for_email = State()
+    waiting_for_passport = State()
+    waiting_for_password = State()
+
+

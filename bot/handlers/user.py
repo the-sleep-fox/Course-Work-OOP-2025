@@ -5,7 +5,7 @@ from aiogram.types import Message, ReplyKeyboardRemove, KeyboardButton, ReplyKey
 from aiogram import F
 import re
 from aiogram.fsm.context import FSMContext
-from bot.states import AuthState
+from bot.states import AuthState, RegisterStates
 import httpx
 
 from server.handler.slots_handler import poll_slots_until_found
@@ -31,7 +31,7 @@ async def start(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("Добро пожаловать! Выберите действие:", reply_markup=ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="\U0001F510 Войти")],
+            [KeyboardButton(text="🔐 Войти")],
             [KeyboardButton(text="\U0001F195 Зарегистрироваться")],
         ], resize_keyboard=True
     ))
@@ -146,15 +146,88 @@ async def handle_country_choice(message: Message, state: FSMContext):
 
             first_slot = slots[0]
             book_response = await client.post("/select_slot", json={
-                "date": first_slot[0],
-                "time": first_slot[1],
+                "date": first_slot["date"],
+                "time": first_slot["time"],
                 "email": email,
                 "country": country
             })
+            print("book response: ", book_response)
             if book_response.status_code == 200:
-                await message.answer(f"Слот забронирован: {first_slot[0]} {first_slot[1]} 📅", reply_markup=main_menu)
+                await message.answer(f"Слот забронирован: {first_slot["date"]} {first_slot["time"]} 📅", reply_markup=main_menu)
             else:
                 await message.answer("Не удалось забронировать слот. Попробуйте позже.")
         else:
             await message.answer("Ошибка получения слотов.")
     await state.set_state(AuthState.menu)
+
+@user.message(CommandStart())
+async def start(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("Добро пожаловать! Выберите действие:", reply_markup=ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="🔐 Войти")],
+            [KeyboardButton(text="\U0001F195 Зарегистрироваться")],
+        ], resize_keyboard=True
+    ))
+
+@user.message(F.text == "\U0001F195 Зарегистрироваться")
+async def start_registration(message: Message, state: FSMContext):
+    await state.set_state(RegisterStates.waiting_for_email)
+    await message.answer("Введите ваш email:", reply_markup=ReplyKeyboardRemove())
+
+@user.message(RegisterStates.waiting_for_email)
+async def process_email(message: Message, state: FSMContext):
+    email = message.text.strip()
+    # Простая проверка формата email
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        await message.answer("Неверный формат email. Попробуйте снова:")
+        return
+    await state.update_data(email=email)
+    await state.set_state(RegisterStates.waiting_for_passport)
+    await message.answer("Введите номер паспорта (например, AB1234567):")
+
+@user.message(RegisterStates.waiting_for_passport)
+async def process_passport(message: Message, state: FSMContext):
+    passport_id = message.text.strip().upper()
+    # Проверка формата паспорта
+    if not re.match(r"^[A-Z]{2}\d{7}$", passport_id):
+        await message.answer("Неверный формат номера паспорта. Ожидается: AB1234567. Попробуйте снова:")
+        return
+    await state.update_data(passport_id=passport_id)
+    await state.set_state(RegisterStates.waiting_for_password)
+    await message.answer("Введите пароль (минимум 8 символов):")
+
+@user.message(RegisterStates.waiting_for_password)
+async def process_password(message: Message, state: FSMContext):
+    password = message.text.strip()
+    if len(password) < 8:
+        await message.answer("Пароль должен содержать минимум 8 символов. Попробуйте снова:")
+        return
+
+    user_data = await state.get_data()
+    email = user_data["email"]
+    passport_id = user_data["passport_id"]
+
+    # Отправка запроса на регистрацию
+    async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
+        try:
+            response = await client.post("http://127.0.0.1:8000/auth/register", json={
+                "email": email,
+                "passport_id": passport_id,
+                "password": password
+            })
+            response.raise_for_status()  # Вызовет исключение для кодов 4xx/5xx
+            await message.answer("Регистрация успешна! Теперь вы можете войти.", reply_markup=ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(text="🔐 Войти")]], resize_keyboard=True
+            ))
+        except httpx.HTTPStatusError as e:
+            error_detail = e.response.json().get("detail", "Ошибка регистрации")
+            await message.answer(f"Ошибка регистрации: {error_detail}. Попробуйте снова.")
+        except httpx.RequestError as e:
+            await message.answer("Ошибка соединения с сервером. Попробуйте позже.")
+            print(f"❌ Ошибка запроса: {e}")
+        except Exception as e:
+            await message.answer("Произошла неизвестная ошибка. Попробуйте позже.")
+            print(f"❌ Неизвестная ошибка: {e}")
+
+    await state.clear()

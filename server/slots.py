@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from .my_email import send_notification_email
-
+from .slots_scheduler import refresh_slots
 
 # from .seed import country
 
@@ -70,7 +70,7 @@ def select_slot(request: SlotSelectionRequest, db: Session = Depends(get_db)):
     db.add(booking)
     db.delete(slot)
     db.commit()
-
+    refresh_slots()
     try:
         send_notification_email(request.email, request.country, (request.date, request.time))
     except Exception as e:
@@ -81,23 +81,20 @@ def select_slot(request: SlotSelectionRequest, db: Session = Depends(get_db)):
         "slot": (request.date, request.time)
     }
 
-    print(f"✅ Слот забронирован: {request.email} -> {request.country} {request.date} {request.time}")
-    return {"message": "Slot booked successfully"}
-
 
 
 @router.delete("/cancel_booking")
 def cancel_booking(email: str, country: str,  db: Session = Depends(get_db)):
     booking = cast(Booking, db.query(Booking).filter_by(email=email, country=country).first())
+    from server.models.slot import Slot
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
+    slot = Slot(date=booking.date, time=booking.time, country=booking.country)
     if booking.date > str(datetime.now().date()) and booking.time > str(datetime.now().time()):
-        from server.models.slot import Slot
-        slot = Slot(date=booking.date, time=booking.time, country=booking.country)
+        db.delete(booking)
         db.add(slot)
+        db.commit()
     else:
-        from server.models.slot import Slot
-        slot = Slot(date=booking.date, time=booking.time, country=booking.country)
         db.delete(booking)
         db.commit()
         print("Слот для времени на визу просрочен")
@@ -120,3 +117,11 @@ def get_bookings(email: str, db: Session = Depends(get_db)):
             "time": booking.time
         })
     return {"bookings": result}
+
+@router.post("/clear_slots")
+def clear_slots():
+    from .slot_store import available_slots
+    available_slots.clear()
+    print("🧹 Слоты очищены:", available_slots)
+    return {"message": "Слоты успешно очищены", "slots": available_slots}
+
