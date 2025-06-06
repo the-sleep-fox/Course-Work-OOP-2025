@@ -1,50 +1,31 @@
-from fastapi import FastAPI, APIRouter
-from .auth import router as auth_router
-from . import slots
+from fastapi import FastAPI, Request, HTTPException
+from server.auth import router as auth_router
+from server import slots
 from server.database import init_db
-from .models import booking
-from .slots_scheduler import refresh_slots
-from .slots import clear_slots
-from datetime import datetime, timedelta
-from apscheduler.schedulers.background import BackgroundScheduler
 
 app = FastAPI(title="Visa Slot Server")
 
-     # Подключаем роутер для авторизации
+# Подключаем роутеры
 app.include_router(auth_router, prefix="/auth")
-
-# Подключаем роутер для слотов
 app.include_router(slots.router)
 
-     # Инициализация базы данных
+# Инициализация базы данных
 init_db()
 
-     # Определяем новый роутер для дополнительных эндпоинтов
-extra_router = APIRouter()
+# Временное хранилище сессий (из auth.py)
+from server.auth import SESSIONS
 
-@extra_router.post("/clear_slots")
-def clear_slots_endpoint():
-    from .slot_store import available_slots
-    clear_slots()
-    return {"message": "Слоты успешно очищены", "slots": available_slots}
-
-     # Подключаем дополнительный роутер
-app.include_router(extra_router)
+@app.middleware("http")
+async def check_session(request: Request, call_next):
+    # Пропускаем публичные эндпоинты
+    if request.url.path in ["/auth/login", "/auth/register"]:
+        return await call_next(request)
+    session_id = request.cookies.get("session_id")
+    if not session_id or session_id not in SESSIONS:
+        raise HTTPException(status_code=401, detail="Не авторизован")
+    request.state.user_email = SESSIONS[session_id]["email"]
+    return await call_next(request)
 
 @app.get("/")
 def root():
     return "Добро пожаловать! Войдите или зарегистрируйтесь."
-
-try:
-         # Инициализация планировщика
-    scheduler = BackgroundScheduler()
-    # Вычисляем время запуска
-    run_time = datetime.now() + timedelta(minutes=2)
-    print(f"Планировщик настроен для запуска refresh_slots в {run_time}")
-    # Запускаем refresh_slots один раз через 2 минуты
-    scheduler.add_job(refresh_slots, 'date', run_date=run_time)
-    print("Планировщик стартует...")
-    scheduler.start()
-    print("Планировщик запущен успешно")
-except Exception as e:
-    print(f"❌ Ошибка при запуске планировщика: {e}")

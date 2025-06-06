@@ -14,5 +14,7 @@ class RegisterStates(StatesGroup):
     waiting_for_email = State()
     waiting_for_passport = State()
     waiting_for_password = State()
+    waiting_for_password_confirm = State()
+    waiting_for_retry = State()
 
 

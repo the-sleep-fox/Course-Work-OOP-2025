@@ -1,60 +1,47 @@
 import asyncio
+import logging
+
 import httpx
 from aiogram import Bot
 from bot_instance import bot
 
+logger = logging.getLogger(__name__)
 
-async def poll_slots_until_found(email, country, chat_id, cookies):
-    print("👀 Запущен цикл поиска слотов...")
-    while True:
-        async with httpx.AsyncClient(base_url="http://127.0.0.1:8000") as client:
-            r = await client.get(f"/{country}/slots", cookies=cookies)
-            print("r status code: ",r.status_code)
-            if r.status_code == 200:
-                slots = r.json().get("slots", [])
-                print(slots)
-                if slots:
-                    # Бронируем и выходим
-                    first = slots[0]
-                    try:
-                        book = await client.post("/select_slot", json={
-                            "email": email,
-                            "country": country,
-                            "date": first["date"],
-                            "time": first["time"],
-                        }, cookies=cookies)
-                        print("book status: ",book.status_code)
-                    except httpx.ReadTimeout:
-                        print("⏳ Таймаут при бронировании слота. Повторяем...")
-                        try:
-                            await bot.send_message(chat_id, text="Таймаут при бронировании. Повторяем поиск...")
-                        except Exception as e:
-                            print(f"❌ Ошибка при отправке сообщения: {e}")
-                        await asyncio.sleep(60)
-                        continue
-                    except httpx.HTTPError as e:
-                        print(f"❌ Ошибка HTTP при бронировании: {e}")
-                        try:
-                            await bot.send_message(chat_id, text=f"Ошибка при бронировании: {e}. Повторяем...")
-                        except Exception as e:
-                            print(f"❌ Ошибка при отправке сообщения: {e}")
-                        await asyncio.sleep(60)
-                        continue
-                    if book.status_code == 200:
-                        print("Слот нашёлся: ", first["date"], first["time"])
-                        await bot.send_message(chat_id, text=f"Слот найден и забронирован: {first["date"]} {first["time"]}")
-                        return
-                    else:
-                        try:
-                            print(" мы здесь потому что ещё ищем слоты...внутри  try")
-                            await bot.send_message(chat_id=chat_id, text ="Слот найден, но не удалось забронировать. Повторяем поиск... вунтри try")
-                        except Exception as e:
-                            print(" сообщение не отправилось в чат телеграмм..")
-                            print(f"❌ Ошибка при отправке сообщения: {e}")
-
-                else:
-                    print(" мы здесь потому что ещё ищем слоты...")
-                    await bot.send_message(chat_id=chat_id, text="мы здесь потому что ещё ищем слоты...")
-
-
-        await asyncio.sleep(60)
+async def poll_slots_until_found(email, country, chat_id, session_id):
+        print(f"👀 Запущен цикл поиска слотов для {email} в {country}...")
+        cookies = {"session_id": session_id}
+        while True:
+            try:
+                async with httpx.AsyncClient(
+                        base_url="http://127.0.0.1:8000",
+                        timeout=httpx.Timeout(30.0),
+                        cookies=cookies,
+                ) as client:
+                    r = await client.get(f"/{country}/slots")
+                    if r.status_code == 200:
+                        slots = r.json().get("slots", [])
+                        if slots:
+                            slot = slots[0]
+                            book = await client.post("/select_slot", json={
+                                "date": slot["date"],
+                                "time": slot["time"],
+                                "email": email,
+                                "country": country
+                            })
+                            if book.status_code == 200:
+                                await bot.send_message(chat_id, f"Слот забронирован: {slot['date']} {slot['time']} 📅")
+                                return book.json()
+                            else:
+                                await bot.send_message(chat_id,
+                                    f"Ошибка бронирования: {book.json().get('detail', 'Неизвестная ошибка')}")
+                                return None
+                    elif r.status_code == 401:
+                        await bot.send_message(chat_id, "Сессия истекла. Пожалуйста, войдите снова.")
+                        return None
+                    await asyncio.sleep(60)  # Пауза перед следующим запросом
+            except httpx.RequestError as e:
+                print(f"❌ Ошибка запроса: {e}")
+                await asyncio.sleep(60)
+            except Exception as e:
+                print(f"❌ Неизвестная ошибка: {e}")
+                await asyncio.sleep(60)

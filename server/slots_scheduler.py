@@ -26,12 +26,10 @@ def refresh_slots():
         db.close()
 
 try:
-    # Инициализация планировщика
+
     scheduler = BackgroundScheduler()
-    # Вычисляем время запуска
-    run_time = datetime.now() + timedelta(minutes=2)
+    run_time = datetime.now() + timedelta(minutes=6)
     print(f"Планировщик настроен для запуска refresh_slots в {run_time}")
-    # Запускаем refresh_slots один раз через 2 минуты
     scheduler.add_job(refresh_slots, 'date', run_date=run_time)
     print("Планировщик стартует...")
     scheduler.start()
